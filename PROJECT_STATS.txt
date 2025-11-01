@@ -1,0 +1,74 @@
+📊 СТАТИСТИКА ПРОЕКТА TrixBot
+================================
+
+📁 Структура директорий:
+ADMIN
+ANALYTICS
+CATALOG
+CORE
+DATABASE
+DATABASE/migrations
+DATABASE/migrations/versions
+DATABASE/{migrations
+DATABASE/{migrations/versions}
+DEPLOY
+GAMES
+GAMES/giveaway
+GAMES/rating
+GAMES/trixticket
+HANDLERS
+HANDLERS/callbacks
+HANDLERS/commands
+HANDLERS/messages
+HANDLERS/special
+KEYBOARDS
+KEYBOARDS/inline
+KEYBOARDS/menus
+RESULTS
+SERVICES
+SERVICES/content
+SERVICES/database
+SERVICES/games
+SERVICES/notification
+SERVICES/utils
+
+📄 Количество файлов по типам:
+- Python файлы (.py): 44
+- Конфигурационные (.json, .txt, .md): 6
+- Всего файлов: 53
+
+🔧 Основные модули:
+✅ CORE/ - Ядро бота (config, bot, dispatcher, states)
+✅ DATABASE/ - 6 моделей БД (users, catalog, games, posts, analytics)
+✅ HANDLERS/ - Обработчики команд (start, help, menu, admin)
+✅ SERVICES/ - Бизнес-логика (user_service с UID генерацией)
+✅ KEYBOARDS/ - Заготовки для клавиатур
+✅ GAMES/ - Модули игр (giveaway, trixticket, rating)
+✅ CATALOG/ - Система каталога услуг
+✅ ANALYTICS/ - Статистика и аналитика
+✅ ADMIN/ - Админ-панель
+✅ DEPLOY/ - Deployment utilities (health_check, setup)
+
+⚙️ Ключевые файлы:
+✅ main.py - Точка входа приложения
+✅ requirements.txt - Зависимости Python
+✅ Procfile - Конфигурация Railway
+✅ railway.json - Настройки деплоя
+✅ runtime.txt - Версия Python (3.11.9)
+✅ .env.example - Пример переменных окружения
+✅ .gitignore - Исключения для Git
+✅ README.md - Документация проекта
+✅ RAILWAY_SETUP.md - Инструкция по развертыванию
+
+🎯 Реализованный функционал:
+✅ Система уникальных UID (1-99999 с исключениями)
+✅ Команда /start с автоматической генерацией UID
+✅ Админ команда /changeuid для изменения UID
+✅ Полная структура БД (10 таблиц)
+✅ Конфигурация для Railway deployment
+✅ Логирование с Loguru
+✅ FSM States для всех процессов
+✅ Health check и setup скрипты
+
+🚀 Готово к развертыванию на Railway!
+📝 Следуйте инструкциям в RAILWAY_SETUP.md
