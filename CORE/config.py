@@ -1,6 +1,7 @@
 """
 Конфигурация бота и переменные окружения
 """
+import os
 from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
@@ -20,6 +21,7 @@ class Settings(BaseSettings):
     
     # Database
     DATABASE_URL: str = Field(..., description="PostgreSQL Database URL")
+    REDIS_URL: str = Field("redis://localhost:6379", description="Redis URL")
     
     # Channels
     MARKET_ID: int = Field(-1003033694255, description="Барахолка⚡️Будапешт")
@@ -32,11 +34,8 @@ class Settings(BaseSettings):
     
     # Admin Chats
     ZAYAVKI_ID: int = Field(-1002734837434, description="xxx ♠️ users mssg/posts")
-    erranncom_ID: int = Field(-1003039151203, description="xxx ♦️ commands, announce, errors")
-    statification_ID: int = Field(-4843909295, description="xxx ♣️ stats/notifications")
-    
-    # Redis (optional)
-    REDIS_URL: str = Field("redis://localhost:6379", description="Redis URL")
+    ERRANNCOM_ID: int = Field(-1003039151203, description="xxx ♦️ commands, announce, errors")
+    STATIFICATION_ID: int = Field(-4843909295, description="xxx ♣️ stats/notifications")
     
     # Admin IDs
     ADMIN_IDS: str = Field("", description="Comma-separated admin IDs")
