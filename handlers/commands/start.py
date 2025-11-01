@@ -1,36 +1,25 @@
-"""
-Обработчик команды /start
-"""
 from aiogram import Router, F
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 from loguru import logger
-
 from DATABASE.base import get_session
 from SERVICES.database.user_service import UserService
 
 router = Router(name='start_command')
 
-
 @router.message(CommandStart())
 async def cmd_start(message: Message):
-    """Обработка команды /start"""
     user = message.from_user
     
     async for session in get_session():
-        # Создаем или получаем пользователя
         db_user = await UserService.get_or_create_user(
-            session=session,
-            user_id=user.id,
-            username=user.username,
-            first_name=user.first_name,
-            last_name=user.last_name,
+            session=session, user_id=user.id, username=user.username,
+            first_name=user.first_name, last_name=user.last_name,
             language_code=user.language_code
         )
         
         logger.info(f"👤 Пользователь {user.id} запустил бота")
         
-        # Приветственное сообщение
         welcome_text = (
             f"👋 Привет, {user.first_name}!\n\n"
             f"Добро пожаловать в TrixBot♥️ - Будапешт!\n\n"
