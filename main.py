@@ -6,8 +6,10 @@ import asyncio
 import sys
 from loguru import logger
 
-from telegram.ext import Application
+from CORE.bot import bot
+from CORE.dispatcher import dp
 from CORE.config import settings
+from DATABASE.base import init_db
 
 
 # Настройка логирования
@@ -25,44 +27,48 @@ logger.add(
 )
 
 
+async def on_startup():
+    """Действия при запуске бота"""
+    logger.info("🚀 Запуск TrixBot♥️ - Будапешт")
+    logger.info(f"Environment: {settings.ENVIRONMENT}")
+    logger.info(f"Debug mode: {settings.DEBUG}")
+    
+    # Инициализация базы данных
+    await init_db()
+    logger.info("✅ База данных инициализирована")
+    
+    # Проверка подключения
+    me = await bot.get_me()
+    logger.info(f"✅ Бот запущен: @{me.username}")
+    logger.info(f"Bot ID: {me.id}")
+
+
+async def on_shutdown():
+    """Действия при остановке бота"""
+    logger.info("🛑 Остановка TrixBot♥️")
+    await bot.session.close()
+
+
 async def main():
-    """Основная функция бота"""
+    """Основная функция"""
     try:
-        logger.info("✅ Используем существующие таблицы БД")
+        # Регистрируем startup/shutdown хуки
+        dp.startup.register(on_startup)
+        dp.shutdown.register(on_shutdown)
         
-        # Создаем приложение бота
-        application = Application.builder().token(settings.BOT_TOKEN).build()
+        # Запуск polling
+        logger.info("📡 Начинаю polling...")
+        await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
         
-        # TODO: Регистрируем handlers здесь
-        # from HANDLERS import register_handlers
-        # register_handlers(application)
-        
-        # Получаем информацию о боте
-        bot_info = await application.bot.get_me()
-        logger.info(f"✅ Бот запущен: @{bot_info.username} (ID: {bot_info.id})")
-        logger.info(f"📍 Режим: {'DEBUG' if settings.DEBUG else 'PRODUCTION'}")
-        
-        logger.info("🚀 Запуск TrixBot♥️ - Будапешт")
-        
-        # Простой запуск polling
-        await application.run_polling(
-            drop_pending_updates=True,
-            allowed_updates=["message", "callback_query"]
-        )
-        
-    except asyncio.CancelledError:
-        logger.info("🛑 Бот остановлен")
     except Exception as e:
-        logger.error(f"❌ Ошибка при работе бота: {e}")
+        logger.exception(f"❌ Критическая ошибка: {e}")
         raise
+    finally:
+        await bot.session.close()
 
 
 if __name__ == "__main__":
     try:
-        # Простой и надежный запуск
         asyncio.run(main())
-    except KeyboardInterrupt:
-        logger.info("🛑 Бот остановлен пользователем")
-    except Exception as e:
-        logger.error(f"❌ Критическая ошибка: {e}")
-        sys.exit(1)
+    except (KeyboardInterrupt, SystemExit):
+        logger.info("👋 Бот остановлен пользователем")
