@@ -46,12 +46,13 @@ async def init_database():
 
 
 async def main():
-    """Главная функция запуска бота"""
-    # Инициализация базы данных (ТОЛЬКО ОДИН РАЗ)
-    db_ready = await init_database()
-    if not db_ready:
-        logger.warning("⚠️ Продолжаем без базы данных")
-
+    # ЗАКОММЕНТИРУЙТЕ ЭТОТ БЛОК:
+    # db_ready = await init_database()
+    
+    # ДОБАВЬТЕ ВМЕСТО НЕГО:
+    logger.info("✅ Используем существующие таблицы БД")
+    
+    # Остальной код...
     # Создаем приложение бота
     application = Application.builder().token(settings.BOT_TOKEN).build()
     
