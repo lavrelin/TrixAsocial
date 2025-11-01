@@ -1,15 +1,15 @@
 """
-Базовые модели и настройка БД
+Базовые настройки и подключение к БД
 """
 from datetime import datetime
 from typing import AsyncGenerator
 
-from sqlalchemy import BigInteger, DateTime, func, text
+from sqlalchemy import DateTime, func
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from loguru import logger
 
-from CORE.config import settings
+from core.config import settings
 
 
 # Базовый класс для моделей
@@ -18,7 +18,7 @@ class Base(DeclarativeBase):
     pass
 
 
-# Общие миксины
+# Общий миксин для временных меток
 class TimestampMixin:
     """Миксин для автоматических временных меток"""
     created_at: Mapped[datetime] = mapped_column(
@@ -49,62 +49,20 @@ async_session_maker = async_sessionmaker(
 )
 
 
-async def table_exists(table_name: str) -> bool:
-    """Проверяет существование таблицы в базе данных"""
-    try:
-        async with engine.connect() as conn:
-            result = await conn.execute(
-                text("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = :table_name)"),
-                {"table_name": table_name}
-            )
-            exists = result.scalar()
-            logger.debug(f"Таблица {table_name} существует: {exists}")
-            return exists
-    except Exception as e:
-        logger.warning(f"Ошибка проверки таблицы {table_name}: {e}")
-        return False
-
-
-async def safe_create_tables():
-    """Безопасное создание таблиц с проверкой существования"""
+async def init_db() -> bool:
+    """Инициализация базы данных"""
     try:
         # Импортируем все модели перед созданием таблиц
-        from DATABASE import users, catalog, games, posts, analytics
+        from database.models import user, catalog, rating, cooldown, special_slot
         
-        # Проверяем основные таблицы
-        tables_to_check = ['users', 'catalog_posts', 'catalog_reviews', 'rating_posts']
-        
-        all_tables_exist = True
-        for table in tables_to_check:
-            if not await table_exists(table):
-                all_tables_exist = False
-                break
-        
-        if all_tables_exist:
-            logger.info("✅ Все таблицы уже существуют")
-            return True
-        
-        # Создаем таблицы если какие-то отсутствуют
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-            logger.info("✅ Таблицы базы данных созданы")
-            return True
-            
+        
+        logger.info("✅ База данных инициализирована")
+        return True
     except Exception as e:
-        if "already exists" in str(e):
-            logger.info("✅ Таблицы уже существуют (перехвачена ошибка)")
-            return True
-        else:
-            logger.error(f"❌ Ошибка создания таблиц: {e}")
-            return False
-
-
-async def init_db():
-    """Инициализация базы данных"""
-    success = await safe_create_tables()
-    if not success:
-        logger.warning("⚠️ Продолжаем без полной инициализации БД")
-    return success
+        logger.error(f"❌ Ошибка инициализации БД: {e}")
+        return False
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
