@@ -49,26 +49,32 @@ async def on_shutdown():
     await bot.session.close()
 
 
+# main.py
 async def main():
-    """Основная функция"""
+    # Инициализация базы данных
     try:
-        # Регистрируем startup/shutdown хуки
-        dp.startup.register(on_startup)
-        dp.shutdown.register(on_shutdown)
-        
-        # Запуск polling
-        logger.info("📡 Начинаю polling...")
-        await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
-        
+        from DATABASE.base import init_db
+        db_success = await init_db()
+        if db_success:
+            logger.info("✅ База данных готова")
+        else:
+            logger.warning("⚠️ База данных не инициализирована, продолжаем в ограниченном режиме")
     except Exception as e:
-        logger.exception(f"❌ Критическая ошибка: {e}")
-        raise
-    finally:
-        await bot.session.close()
+        logger.error(f"❌ Ошибка инициализации БД: {e}")
+        logger.warning("⚠️ Продолжаем без базы данных")
 
-
-if __name__ == "__main__":
+    # Создаем приложение бота
+    application = Application.builder().token(settings.BOT_TOKEN).build()
+    
+    # Регистрируем handlers...
+    
+    # Запускаем бота
     try:
-        asyncio.run(main())
-    except (KeyboardInterrupt, SystemExit):
-        logger.info("👋 Бот остановлен пользователем")
+        logger.info("🚀 Запуск бота...")
+        await application.run_polling(
+            drop_pending_updates=True,
+            allowed_updates=["message", "callback_query"],
+            timeout=30
+        )
+    except Exception as e:
+        logger.error(f"❌ Ошибка запуска бота: {e}")
