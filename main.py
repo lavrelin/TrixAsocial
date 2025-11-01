@@ -6,10 +6,8 @@ import asyncio
 import sys
 from loguru import logger
 
-from CORE.bot import bot
-from CORE.dispatcher import dp
+from telegram.ext import Application
 from CORE.config import settings
-from DATABASE.base import init_db
 
 
 # Настройка логирования
@@ -27,54 +25,65 @@ logger.add(
 )
 
 
-async def on_startup():
-    """Действия при запуске бота"""
-    logger.info("🚀 Запуск TrixBot♥️ - Будапешт")
-    logger.info(f"Environment: {settings.ENVIRONMENT}")
-    logger.info(f"Debug mode: {settings.DEBUG}")
-    
-    # Инициализация базы данных
-    await init_db()
-    logger.info("✅ База данных инициализирована")
-    
-    # Проверка подключения
-    me = await bot.get_me()
-    logger.info(f"✅ Бот запущен: @{me.username}")
-    logger.info(f"Bot ID: {me.id}")
-
-
-async def on_shutdown():
-    """Действия при остановке бота"""
-    logger.info("🛑 Остановка TrixBot♥️")
-    await bot.session.close()
-
-
-# main.py
-async def main():
-    # Инициализация базы данных
+async def init_database():
+    """Безопасная инициализация базы данных"""
     try:
         from DATABASE.base import init_db
         db_success = await init_db()
         if db_success:
             logger.info("✅ База данных готова")
+            return True
         else:
-            logger.warning("⚠️ База данных не инициализирована, продолжаем в ограниченном режиме")
+            logger.warning("⚠️ База данных не инициализирована")
+            return False
     except Exception as e:
-        logger.error(f"❌ Ошибка инициализации БД: {e}")
+        if "already exists" in str(e):
+            logger.info("✅ Таблицы уже существуют")
+            return True
+        else:
+            logger.error(f"❌ Ошибка инициализации БД: {e}")
+            return False
+
+
+async def main():
+    """Главная функция запуска бота"""
+    # Инициализация базы данных (ТОЛЬКО ОДИН РАЗ)
+    db_ready = await init_database()
+    if not db_ready:
         logger.warning("⚠️ Продолжаем без базы данных")
 
     # Создаем приложение бота
     application = Application.builder().token(settings.BOT_TOKEN).build()
     
-    # Регистрируем handlers...
+    # TODO: Регистрируем handlers здесь
+    # from HANDLERS import register_handlers
+    # register_handlers(application)
     
     # Запускаем бота
     try:
-        logger.info("🚀 Запуск бота...")
+        logger.info("🚀 Запуск TrixBot♥️ - Будапешт")
+        
+        # Получаем информацию о боте
+        bot_info = await application.bot.get_me()
+        logger.info(f"✅ Бот запущен: @{bot_info.username} (ID: {bot_info.id})")
+        logger.info(f"📍 Режим: {'DEBUG' if settings.DEBUG else 'PRODUCTION'}")
+        
         await application.run_polling(
             drop_pending_updates=True,
             allowed_updates=["message", "callback_query"],
-            timeout=30
+            timeout=30,
+            pool_timeout=30
         )
     except Exception as e:
         logger.error(f"❌ Ошибка запуска бота: {e}")
+        raise
+
+
+if __name__ == "__main__":
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        logger.info("🛑 Бот остановлен пользователем")
+    except Exception as e:
+        logger.error(f"❌ Критическая ошибка: {e}")
+        sys.exit(1)
