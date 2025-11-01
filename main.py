@@ -27,6 +27,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 DATABASE_URL = os.getenv("DATABASE_URL")
 ADMIN_IDS = [int(id.strip()) for id in os.getenv("ADMIN_IDS", "").split(",") if id.strip()]
 
+
 RESERVED_UIDS = [
     1, 2, 3, 5, 7, 8, 10, 13, 17, 21, 22, 23, 25, 34, 42, 50, 53, 55, 69, 80, 89,
     112, 144, 187, 233, 255, 311, 360, 377, 420, 443, 451, 500, 511, 610, 666, 777,
