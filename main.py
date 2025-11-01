@@ -1,16 +1,11 @@
-"""
-Главная точка входа в бот
-TrixBot♥️ - Будапешт @Trixlivebot
-"""
 import asyncio
 import sys
 from loguru import logger
-
 from CORE.bot import bot
 from CORE.dispatcher import dp
 from CORE.config import settings
 from DATABASE.base import init_db
-
+from SERVICES.utils.scheduler import setup_scheduler, shutdown_scheduler
 
 # Настройка логирования
 logger.remove()
@@ -19,13 +14,6 @@ logger.add(
     format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan> - <level>{message}</level>",
     level="INFO" if not settings.DEBUG else "DEBUG"
 )
-logger.add(
-    "logs/bot_{time:YYYY-MM-DD}.log",
-    rotation="00:00",
-    retention="30 days",
-    level="INFO"
-)
-
 
 async def on_startup():
     """Действия при запуске бота"""
@@ -33,30 +21,44 @@ async def on_startup():
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"Debug mode: {settings.DEBUG}")
     
-    # Инициализация базы данных
+    # Инициализация БД
     await init_db()
     logger.info("✅ База данных инициализирована")
+    
+    # Регистрация middleware
+    from HANDLERS.special.middleware import LoggingMiddleware, ThrottlingMiddleware, UserTrackingMiddleware
+    dp.message.middleware(LoggingMiddleware())
+    dp.message.middleware(ThrottlingMiddleware())
+    dp.message.middleware(UserTrackingMiddleware())
+    logger.info("✅ Middleware зарегистрированы")
+    
+    # Регистрация обработчика ошибок
+    from HANDLERS.special.errors import router as error_router
+    from HANDLERS.callbacks.rating_callbacks import router as rating_callback_router
+    dp.include_router(error_router)
+    dp.include_router(rating_callback_router)
+    logger.info("✅ Error handler и callbacks зарегистрированы")
+    
+    # Запуск планировщика
+    setup_scheduler()
     
     # Проверка подключения
     me = await bot.get_me()
     logger.info(f"✅ Бот запущен: @{me.username}")
     logger.info(f"Bot ID: {me.id}")
 
-
 async def on_shutdown():
     """Действия при остановке бота"""
     logger.info("🛑 Остановка TrixBot♥️")
+    shutdown_scheduler()
     await bot.session.close()
-
 
 async def main():
     """Основная функция"""
     try:
-        # Регистрируем startup/shutdown хуки
         dp.startup.register(on_startup)
         dp.shutdown.register(on_shutdown)
         
-        # Запуск polling
         logger.info("📡 Начинаю polling...")
         await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
         
@@ -65,7 +67,6 @@ async def main():
         raise
     finally:
         await bot.session.close()
-
 
 if __name__ == "__main__":
     try:
